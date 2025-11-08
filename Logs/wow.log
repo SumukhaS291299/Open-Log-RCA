@@ -1,0 +1,4 @@
+[25-11-08 16:24:55] [DEBUG   ] debug (main.py:8)
+[25-11-08 16:24:55] [INFO    ] info (main.py:9)
+[25-11-08 16:24:55] [WARNING ] warning (main.py:10)
+[25-11-08 16:24:55] [ERROR   ] error (main.py:11)

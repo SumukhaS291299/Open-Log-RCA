@@ -1,0 +1,9 @@
+[project]
+name = "openlogrca"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.13"
+dependencies = [
+    "chromadb>=1.3.4",
+    "rich>=14.2.0",
+]

@@ -3,7 +3,10 @@ import configparser
 
 from vectorEmbeddings import RCAChromaPersistent, RCAChromaHttp
 from utils import Readconfig, setup_logger
+from vectorEmbeddings.setUpDB import RCAChromaHttpAsync
 
+
+# TODO: Add async client compatibility
 
 class CreateVectorDB:
 
@@ -11,6 +14,19 @@ class CreateVectorDB:
         self.collections = None
         self.config = config
         self.client = None
+
+    def insert(self, log_id, message, metadata):
+        self.collections.add(
+            ids=[log_id],
+            documents=[message],
+            metadatas=[metadata]
+        )
+
+        return [log_id]
+
+    def query(self, queryText: list):
+        return self.collections.query(query_texts=queryText)
+
 
 # TODO Add AsyncChroma in HTTP DB option
 class CreateHttpDB(CreateVectorDB):
@@ -22,6 +38,18 @@ class CreateHttpDB(CreateVectorDB):
         self.client = RCAChromaHttp(self.config).get_client()
 
     def get_collection(self, name: str):
+        self.collections = self.client.get_or_create_collection(name)
+
+
+class CreateHttpAsync(CreateVectorDB):
+
+    def __init__(self, config: configparser.ConfigParser):
+        super().__init__(config)
+
+    async def create_asyncClient(self):
+        self.client = RCAChromaHttpAsync(self.config).get_client()
+
+    def get_asyncCollection(self, name: str):
         self.collections = self.client.get_or_create_collection(name)
 
 
@@ -58,9 +86,33 @@ def __testPersistentDB():
             {"chapter": 29, "verse": 11},
         ],
     )
+    print(chroma_client.query(queryText=["lorem"]))
 
 
-async def __testHttpDB():
+def __testHttpDB():
+    config = Readconfig().read()
+
+    chroma_client = CreateHttpDB(config)
+
+    chroma_client.create_client()
+
+    chroma_client.get_collection("test_collection")
+    chroma_client.collections.add(
+        ids=["id1", "id2", "id3"],
+        documents=[
+            "lorem ipsum dolor sit amet",
+            "second document content",
+            "third document content",
+        ],
+        metadatas=[
+            {"chapter": 3, "verse": 16},
+            {"chapter": 3, "verse": 5},
+            {"chapter": 29, "verse": 11},
+        ],
+    )
+
+
+async def __testHttpDBAsync():
     config = Readconfig().read()
 
     chroma_client = CreateHttpDB(config)
@@ -84,5 +136,6 @@ async def __testHttpDB():
 
 
 if __name__ == '__main__':
-    # __testPersistentDB()
-    asyncio.run(__testHttpDB())
+    __testPersistentDB()
+    # __testHttpDB()
+    # asyncio.run(__testHttpDBAsync())

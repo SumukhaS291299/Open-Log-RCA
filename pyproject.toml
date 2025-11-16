@@ -21,7 +21,6 @@ openlogrca = { git = "https://github.com/SumukhaS291299/Open-Log-RCA.git", branc
 
 [tool.setuptools]
 packages = [
-    "Embeddings",
     "Logs",
     "rca_ingest",
     "utils",

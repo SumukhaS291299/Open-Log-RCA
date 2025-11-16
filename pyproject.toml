@@ -12,8 +12,19 @@ dependencies = [
 
 
 [project.scripts]
-openlogrca = "openlogrca.main:main"
+openlogrca = "cli.main:main"
 
 
 [tool.uv.sources]
 openlogrca = { git = "https://github.com/SumukhaS291299/Open-Log-RCA.git", branch = "main" }
+
+
+[tool.setuptools]
+packages = [
+    "Embeddings",
+    "Logs",
+    "rca_ingest",
+    "utils",
+    "vectorEmbeddings",
+    "cli"
+]

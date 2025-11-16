@@ -78,7 +78,7 @@ if __name__ == "__main__":
 
     # chroma_client = chroma_client_http.get_client()
     chroma_client = chroma_client_persist.get_client()
-    collection= chroma_client.get_or_create_collection("test_collection")
+    collection = chroma_client.get_or_create_collection("test_collection")
     collection.add(
         ids=["id1", "id2", "id3"],
         documents=[

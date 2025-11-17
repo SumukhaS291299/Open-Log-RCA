@@ -1,4 +1,12 @@
 import sys
+from pathlib import Path
+
+# LOAD ROOT if RUN as py main.py
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+# LOAD ROOT if RUN as py main.py
 
 from rich.console import Console
 from rich.panel import Panel
@@ -8,6 +16,8 @@ from rich.table import Table
 
 from utils import RCAconfig
 from vectorEmbeddings.createDB import CreatePersistentDB, CreateHttpDB
+import json
+import csv
 
 console = Console()
 
@@ -61,18 +71,157 @@ def prompt_metadata_list():
 
     return metadata_list
 
+def ensure_template_files_exist():
+    """
+    Ensures template_chroma.csv and template_chroma.json exist.
+    If missing, creates them using create_template_files().
+    """
+    csv_path = Path("template_chroma.csv")
+    json_path = Path("template_chroma.json")
+
+    if csv_path.exists() or json_path.exists():
+        return  # At least one exists → no need to create both
+
+    console.print("[bold yellow]No template files found. Generating CSV/JSON templates...[/bold yellow]")
+    create_template_files()
+
+
+def create_template_files():
+    console.print("[bold green]Creating template files...[/bold green]")
+
+    # CSV Template
+    csv_path = "template_chroma.csv"
+    with open(csv_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["id", "document", "metadata"])
+        writer.writeheader()
+        writer.writerow({
+            "id": "1",
+            "document": "Sample document text",
+            "metadata": '{"category": "example", "value": 123}'
+        })
+        writer.writerow({
+            "id": "2",
+            "document": "Another sample text",
+            "metadata": '{"tag": "demo"}'
+        })
+
+    # JSON Template
+    json_path = "template_chroma.json"
+    json_template = [
+        {
+            "id": "1",
+            "document": "Sample document text",
+            "metadata": {
+                "category": "example",
+                "value": 123
+            }
+        },
+        {
+            "id": "2",
+            "document": "Another sample text",
+            "metadata": {
+                "tag": "demo"
+            }
+        }
+    ]
+
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(json_template, f, indent=4)
+
+    console.print(f"[bold cyan]Templates created:[/bold cyan]")
+    console.print(f" - {csv_path}")
+    console.print(f" - {json_path}")
+
+
+def collect_chroma_input_from_file():
+    console.print("[bold green]File Input Mode[/bold green]")
+
+    # Ensure templates exist
+    ensure_template_files_exist()
+
+    # Find .csv and .json files in CWD
+    cwd = Path.cwd()
+    files = list(cwd.glob("*.csv")) + list(cwd.glob("*.json"))
+
+    if not files:
+        console.print("[bold red]No CSV or JSON files found.[/bold red]")
+        return None
+
+    # If multiple files exist → let user choose
+    console.print("\n[bold cyan]Available data files:[/bold cyan]")
+    for i, f in enumerate(files, start=1):
+        console.print(f"[bold yellow]{i}.[/bold yellow] {f.name}")
+
+    choice = Prompt.ask(
+        "[bold green]Choose a file number[/bold green]",
+        choices=[str(i) for i in range(1, len(files) + 1)]
+    )
+
+    file_path = files[int(choice) - 1]
+    console.print(f"[bold cyan]Using file:[/bold cyan] {file_path.name}")
+
+    ids, documents, metadatas = [], [], []
+
+    # --- Load JSON ---
+    if file_path.suffix.lower() == ".json":
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        for entry in data:
+            ids.append(str(entry["id"]))
+            documents.append(entry["document"])
+            metadatas.append(entry.get("metadata", {}))
+
+        return ids, documents, metadatas
+
+    # --- Load CSV ---
+    if file_path.suffix.lower() == ".csv":
+        with open(file_path, "r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+
+            required = {"id", "document", "metadata"}
+            if not required <= set(reader.fieldnames):
+                console.print("[bold red]CSV must contain columns: id, document, metadata[/bold red]")
+                return None
+
+            for row in reader:
+                ids.append(row["id"])
+                documents.append(row["document"])
+                try:
+                    metadatas.append(json.loads(row["metadata"]))
+                except json.JSONDecodeError:
+                    console.print(f"[bold red]Invalid metadata JSON in row: {row}[/bold red]")
+                    return None
+
+        return ids, documents, metadatas
+
+    console.print("[bold red]Unsupported file extension.[/bold red]")
+    return None
+
+
+
 
 def collect_chroma_input():
-    """
-    Collects ids, documents, metadata in the same structure needed by Chroma.
-    """
     console.print("[bold green]Collecting Chroma inputs...[/bold green]\n")
 
+    console.print("[bold cyan]How do you want to provide data?[/bold cyan]")
+    console.print("[bold yellow]1.[/bold yellow] Load from CSV/JSON file")
+    console.print("[bold yellow]2.[/bold yellow] Enter manually")
+
+    choice = Prompt.ask("[bold green]Choose an option[/bold green]", choices=["1", "2"])
+
+    if choice == "1":
+        result = collect_chroma_input_from_file()
+        if result is not None:
+            return result
+        console.print("[bold red]Failed to load from file. Switching to manual input.[/bold red]")
+
+    # Manual entry
     ids = prompt_list("IDs")
     documents = prompt_list("documents")
     metadatas = prompt_metadata_list()
-
     return ids, documents, metadatas
+
 
 def prompt_query_list():
     console.print("[bold cyan]Enter query texts (blank to stop):[/bold cyan]")
@@ -121,7 +270,6 @@ def display_chroma_result(result):
     console.print(table)
 
 
-
 def main():
     console.print(Panel("[bold cyan]Main Menu[/bold cyan]", expand=False))
     config = RCAconfig.Readconfig().read()
@@ -167,7 +315,6 @@ def main():
 
     query_texts = prompt_query_list()
     display_chroma_result(chroma_client.query(query_texts))
-
 
 
 if __name__ == '__main__':

@@ -199,8 +199,6 @@ def collect_chroma_input_from_file():
     return None
 
 
-
-
 def collect_chroma_input():
     console.print("[bold green]Collecting Chroma inputs...[/bold green]\n")
 
@@ -270,6 +268,16 @@ def display_chroma_result(result):
     console.print(table)
 
 
+def promptCollectInput():
+    console.print("[bold cyan]Do you want to provide any extra data?[/bold cyan]")
+
+    choice = Prompt.ask("[bold green]Choose an option[/bold green]", choices=["y", "n"])
+
+    if choice.lower() == "y":
+        return True
+    return False
+
+# TODO: Make Chunked Batch Add (When needed) [chroma_client.collections.add]
 def main():
     console.print(Panel("[bold cyan]Main Menu[/bold cyan]", expand=False))
     config = RCAconfig.Readconfig().read()
@@ -288,23 +296,26 @@ def main():
             chroma_client.create_client()
             chroma_collection_name = prompt("[bold cyan]Enter your collection name[/bold cyan]: ")
             chroma_client.get_collection(chroma_collection_name)
-            ids, documents, metadatas = collect_chroma_input()
-            chroma_client.collections.add(ids=ids, documents=documents, metadatas=metadatas)
+            if promptCollectInput():
+                ids, documents, metadatas = collect_chroma_input()
+                chroma_client.collections.add(ids=ids, documents=documents, metadatas=metadatas)
 
         case "2":
             chroma_client = CreateHttpDB(config)
             chroma_client.create_client()
             chroma_collection_name = prompt("[bold cyan]Enter your collection name[/bold cyan]: ")
             chroma_client.get_collection(chroma_collection_name)
-            ids, documents, metadatas = collect_chroma_input()
-            chroma_client.collections.add(ids=ids, documents=documents, metadatas=metadatas)
+            if promptCollectInput():
+                ids, documents, metadatas = collect_chroma_input()
+                chroma_client.collections.add(ids=ids, documents=documents, metadatas=metadatas)
         case "3":
             chroma_client = CreateHttpDB(config)
             chroma_client.create_client()
             chroma_collection_name = prompt("[bold cyan]Enter your collection name[/bold cyan]: ")
             chroma_client.get_collection(chroma_collection_name)
-            ids, documents, metadatas = collect_chroma_input()
-            chroma_client.collections.add(ids=ids, documents=documents, metadatas=metadatas)
+            if promptCollectInput():
+                ids, documents, metadatas = collect_chroma_input()
+                chroma_client.collections.add(ids=ids, documents=documents, metadatas=metadatas)
 
         case "4":
             sys.exit(0)

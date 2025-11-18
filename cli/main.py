@@ -1,6 +1,8 @@
 import sys
 from pathlib import Path
 
+from vectorEmbeddings.embedding import embed_texts
+
 # LOAD ROOT if RUN as py main.py
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -37,6 +39,20 @@ def prompt_list(label: str):
     return items
 
 
+def prompt_embedding_list(num_docs: int):
+    console.print("[bold cyan]Enter embeddings for each document[/bold cyan]")
+    console.print("[bold yellow]Format: comma-separated floats, e.g. 0.12, 0.33, -0.88[/bold yellow]")
+
+    embeddings = []
+    for i in range(num_docs):
+        console.print(f"[bold green]Embedding for document {i + 1}:[/bold green]")
+        line = prompt("> ").strip()
+        vector = [float(x) for x in line.split(",")]
+        embeddings.append(vector)
+
+    return embeddings
+
+
 def prompt_metadata_list():
     console.print("[bold cyan]Enter metadata objects (leave first key blank to stop):[/bold cyan]")
     metadata_list = []
@@ -70,6 +86,7 @@ def prompt_metadata_list():
         metadata_list.append(meta)
 
     return metadata_list
+
 
 def ensure_template_files_exist():
     """
@@ -172,7 +189,8 @@ def collect_chroma_input_from_file():
             documents.append(entry["document"])
             metadatas.append(entry.get("metadata", {}))
 
-        return ids, documents, metadatas
+        embeddings = embed_texts(documents)
+        return ids, documents, metadatas, embeddings
 
     # --- Load CSV ---
     if file_path.suffix.lower() == ".csv":
@@ -218,7 +236,11 @@ def collect_chroma_input():
     ids = prompt_list("IDs")
     documents = prompt_list("documents")
     metadatas = prompt_metadata_list()
-    return ids, documents, metadatas
+
+    # Ask for embeddings
+    embeddings = embed_texts(documents)
+
+    return ids, documents, metadatas, embeddings
 
 
 def prompt_query_list():
@@ -277,6 +299,7 @@ def promptCollectInput():
         return True
     return False
 
+
 # TODO: Make Chunked Batch Add (When needed) [chroma_client.collections.add]
 def main():
     console.print(Panel("[bold cyan]Main Menu[/bold cyan]", expand=False))
@@ -297,8 +320,14 @@ def main():
             chroma_collection_name = prompt("[bold cyan]Enter your collection name[/bold cyan]: ")
             chroma_client.get_collection(chroma_collection_name)
             if promptCollectInput():
-                ids, documents, metadatas = collect_chroma_input()
-                chroma_client.collections.add(ids=ids, documents=documents, metadatas=metadatas)
+                ids, documents, metadatas, embeddings = collect_chroma_input()
+
+                chroma_client.collections.add(
+                    ids=ids,
+                    documents=documents,
+                    metadatas=metadatas,
+                    embeddings=embeddings
+                )
 
         case "2":
             chroma_client = CreateHttpDB(config)
@@ -306,16 +335,29 @@ def main():
             chroma_collection_name = prompt("[bold cyan]Enter your collection name[/bold cyan]: ")
             chroma_client.get_collection(chroma_collection_name)
             if promptCollectInput():
-                ids, documents, metadatas = collect_chroma_input()
-                chroma_client.collections.add(ids=ids, documents=documents, metadatas=metadatas)
+                ids, documents, metadatas, embeddings = collect_chroma_input()
+
+                chroma_client.collections.add(
+                    ids=ids,
+                    documents=documents,
+                    metadatas=metadatas,
+                    embeddings=embeddings
+                )
+
         case "3":
             chroma_client = CreateHttpDB(config)
             chroma_client.create_client()
             chroma_collection_name = prompt("[bold cyan]Enter your collection name[/bold cyan]: ")
             chroma_client.get_collection(chroma_collection_name)
             if promptCollectInput():
-                ids, documents, metadatas = collect_chroma_input()
-                chroma_client.collections.add(ids=ids, documents=documents, metadatas=metadatas)
+                ids, documents, metadatas, embeddings = collect_chroma_input()
+
+                chroma_client.collections.add(
+                    ids=ids,
+                    documents=documents,
+                    metadatas=metadatas,
+                    embeddings=embeddings
+                )
 
         case "4":
             sys.exit(0)
@@ -325,7 +367,13 @@ def main():
     console.print("[bold cyan] Query Chroma vector Database![/bold cyan]")
 
     query_texts = prompt_query_list()
-    display_chroma_result(chroma_client.query(query_texts))
+    query_embeddings = embed_texts(query_texts)
+
+    display_chroma_result(
+        chroma_client.collections.query(
+            query_embeddings=query_embeddings
+        )
+    )
 
 
 if __name__ == '__main__':

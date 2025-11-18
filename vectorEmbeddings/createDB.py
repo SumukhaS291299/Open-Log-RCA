@@ -1,7 +1,7 @@
 import asyncio
 import configparser
 
-from vectorEmbeddings import RCAChromaPersistent, RCAChromaHttp, OllamaEmbeddingFunction
+from vectorEmbeddings import RCAChromaPersistent, RCAChromaHttp
 from utils import Readconfig, setup_logger
 from vectorEmbeddings.setUpDB import RCAChromaHttpAsync
 
@@ -14,10 +14,6 @@ class CreateVectorDB:
         self.collections = None
         self.config = config
         self.client = None
-        OllamaEmbeddingModel = config.get(section="OllamaEmbedding", option="model", fallback="nomic-embed-text")
-        self.embedding_fn = OllamaEmbeddingFunction(
-            model=OllamaEmbeddingModel
-        )
 
     def insert(self, log_id, message, metadata):
         self.collections.add(
@@ -42,7 +38,7 @@ class CreateHttpDB(CreateVectorDB):
         self.client = RCAChromaHttp(self.config).get_client()
 
     def get_collection(self, name: str):
-        self.collections = self.client.get_or_create_collection(name=name, embedding_function=self.embedding_fn)
+        self.collections = self.client.get_or_create_collection(name=name)
 
 
 class CreateHttpAsync(CreateVectorDB):
@@ -54,7 +50,7 @@ class CreateHttpAsync(CreateVectorDB):
         self.client = RCAChromaHttpAsync(self.config).get_client()
 
     def get_asyncCollection(self, name: str):
-        self.collections = self.client.get_or_create_collection(name=name, embedding_function=self.embedding_fn)
+        self.collections = self.client.get_or_create_collection(name=name)
 
 
 class CreatePersistentDB(CreateVectorDB):
@@ -66,7 +62,7 @@ class CreatePersistentDB(CreateVectorDB):
         self.client = RCAChromaPersistent(self.config).get_client()
 
     def get_collection(self, name: str):
-        self.collections = self.client.get_or_create_collection(name=name, embedding_function=self.embedding_fn)
+        self.collections = self.client.get_or_create_collection(name=name)
 
 
 def __testPersistentDB():

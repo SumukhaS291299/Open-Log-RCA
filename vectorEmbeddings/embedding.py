@@ -1,37 +1,17 @@
 import requests
 
+
 # TODO: Add config for host and port changes for ollama
-
-class OllamaEmbeddingFunction:
-    def __init__(self, model="nomic-embed-text", host="localhost", port=11434):
-        self.url = f"http://{host}:{port}/api/embeddings"
-        self.model = model
-
-    def __call__(self, input):
-        """Embeds documents one-by-one (Ollama limitation)."""
-        embeddings = []
-        for text in input:
-            resp = requests.post(
-                self.url,
-                json={"model": self.model, "prompt": text},
-            )
-            resp.raise_for_status()
-            data = resp.json()
-
-            # Ollama returns { "embedding": [...] }
-            embeddings.append(data["embedding"])
-
-        return embeddings
-
-    def name(self):
-        return f"ollama-{self.model}"
-
-
-
-class OpenAIEmbeddingFunction:
-
-    def __init__(self):
-        raise NotImplemented
+def embed_texts(texts, model="nomic-embed-text", host="http://localhost:11434"):
+    embeddings = []
+    for text in texts:
+        r = requests.post(
+            f"{host}/api/embeddings",
+            json={"model": model, "prompt": text}
+        )
+        r.raise_for_status()
+        embeddings.append(r.json()["embedding"])
+    return embeddings
 
 
 # import torch

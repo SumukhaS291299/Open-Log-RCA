@@ -1,7 +1,8 @@
+import configparser
 import sys
 from pathlib import Path
 
-from vectorEmbeddings.embedding import embed_texts
+from vectorEmbeddings import RCAEmbedding
 
 # LOAD ROOT if RUN as py main.py
 
@@ -150,7 +151,7 @@ def create_template_files():
     console.print(f" - {json_path}")
 
 
-def collect_chroma_input_from_file():
+def collect_chroma_input_from_file(config: configparser.ConfigParser):
     console.print("[bold green]File Input Mode[/bold green]")
 
     # Ensure templates exist
@@ -189,7 +190,11 @@ def collect_chroma_input_from_file():
             documents.append(entry["document"])
             metadatas.append(entry.get("metadata", {}))
 
-        embeddings = embed_texts(documents)
+        # Ask for embeddings
+        embeddings = RCAEmbedding(config).embed_texts(documents)
+
+        assert len(embeddings) == len(documents), \
+            "❌ Embedding count mismatch after embedding!"
         return ids, documents, metadatas, embeddings
 
     # --- Load CSV ---
@@ -217,7 +222,7 @@ def collect_chroma_input_from_file():
     return None
 
 
-def collect_chroma_input():
+def collect_chroma_input(config: configparser.ConfigParser):
     console.print("[bold green]Collecting Chroma inputs...[/bold green]\n")
 
     console.print("[bold cyan]How do you want to provide data?[/bold cyan]")
@@ -227,7 +232,7 @@ def collect_chroma_input():
     choice = Prompt.ask("[bold green]Choose an option[/bold green]", choices=["1", "2"])
 
     if choice == "1":
-        result = collect_chroma_input_from_file()
+        result = collect_chroma_input_from_file(config)
         if result is not None:
             return result
         console.print("[bold red]Failed to load from file. Switching to manual input.[/bold red]")
@@ -237,23 +242,40 @@ def collect_chroma_input():
     documents = prompt_list("documents")
     metadatas = prompt_metadata_list()
 
+    assert len(ids) == len(documents) == len(metadatas), \
+        "❌ File parser returned misaligned ids/docs/metas!"
+
     # Ask for embeddings
-    embeddings = embed_texts(documents)
+    embeddings = RCAEmbedding(config).embed_texts(documents)
+
+    assert len(embeddings) == len(documents), \
+        "❌ Embedding count mismatch after embedding!"
 
     return ids, documents, metadatas, embeddings
 
 
 def prompt_query_list():
-    console.print("[bold cyan]Enter query texts (blank to stop):[/bold cyan]")
+    console.print("[bold cyan]Enter query texts. Blank = run query. 'q' to exit.[/bold cyan]")
     queries = []
 
     while True:
         q = prompt("> ").strip()
-        if not q:
-            break
-        queries.append(q)
 
-    return queries
+        # exit commands
+        if q.lower() in ("q", "quit", "exit", "bye"):
+            return None
+
+        # blank → run query
+        if q == "":
+            if queries:
+                return queries  # return collected queries
+            else:
+                # blank at very beginning → ask again
+                console.print("[italic yellow]Enter at least one query or 'q' to exit.[/italic yellow]")
+                continue
+
+        # store normal query text
+        queries.append(q)
 
 
 def display_chroma_result(result):
@@ -320,7 +342,7 @@ def main():
             chroma_collection_name = prompt("[bold cyan]Enter your collection name[/bold cyan]: ")
             chroma_client.get_collection(chroma_collection_name)
             if promptCollectInput():
-                ids, documents, metadatas, embeddings = collect_chroma_input()
+                ids, documents, metadatas, embeddings = collect_chroma_input(config)
 
                 chroma_client.collections.add(
                     ids=ids,
@@ -335,7 +357,7 @@ def main():
             chroma_collection_name = prompt("[bold cyan]Enter your collection name[/bold cyan]: ")
             chroma_client.get_collection(chroma_collection_name)
             if promptCollectInput():
-                ids, documents, metadatas, embeddings = collect_chroma_input()
+                ids, documents, metadatas, embeddings = collect_chroma_input(config)
 
                 chroma_client.collections.add(
                     ids=ids,
@@ -350,7 +372,7 @@ def main():
             chroma_collection_name = prompt("[bold cyan]Enter your collection name[/bold cyan]: ")
             chroma_client.get_collection(chroma_collection_name)
             if promptCollectInput():
-                ids, documents, metadatas, embeddings = collect_chroma_input()
+                ids, documents, metadatas, embeddings = collect_chroma_input(config)
 
                 chroma_client.collections.add(
                     ids=ids,
@@ -366,15 +388,21 @@ def main():
 
     console.print("[bold cyan] Query Chroma vector Database![/bold cyan]")
 
-    query_texts = prompt_query_list()
-    query_embeddings = embed_texts(query_texts)
+    while True:
+        query_texts = prompt_query_list()
 
-    display_chroma_result(
-        chroma_client.collections.query(
-            query_embeddings=query_embeddings
+        if query_texts is None:
+            console.print("[bold yellow]Exiting query mode...[/bold yellow]")
+            break
+
+        query_embeddings = RCAEmbedding(config).embed_texts(query_texts)
+
+        result = chroma_client.collections.query(
+            query_embeddings=query_embeddings,
+            n_results=10
         )
-    )
 
+        display_chroma_result(result)
 
 if __name__ == '__main__':
     main()

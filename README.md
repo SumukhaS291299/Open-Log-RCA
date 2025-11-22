@@ -1,8 +1,3 @@
-Here is a **clean, production-ready README.md** for your project — Vector → Embedding Service → ChromaDB semantic log ingestion pipeline.
-You can paste this directly into your repo.
-
----
-
 # 📘 Semantic Log Ingestion & Search Pipeline
 
 ### **Vector.dev → FastAPI Embedding Service → ChromaDB**
@@ -231,13 +226,13 @@ Once validated locally, deploy these components to Kubernetes:
 Pull requests are welcome!
 If you'd like to request enhancements (UI, LLM integration, Kubernetes automation), feel free to open an issue.
 
----
-
-If you want, I can also generate:
-
-✅ A **logo/badge** for your README
-✅ A **sequence diagram** in Mermaid
-✅ A **full Wiki-style documentation**
-✅ A **Kubernetes folder with all manifests**
-
-Tell me what you want next!
+- Added proper batch embedding support using /api/embed with strict validation
+- Ensured 1:1 alignment between documents, metadata, and embeddings
+- Fixed JSON/CSV ingestion to avoid misaligned vectors
+- Improved query input flow:
+  - Blank line now triggers query execution
+  - Added support for 'q', 'quit', 'exit', 'bye' to exit query mode
+- Normalized query loop to avoid infinite input prompts
+- Added safety checks for empty docs and embedding mismatches
+- Updated Chroma query logic to allow manual embedding queries
+- General cleanup and logging improvements across ingestion and query paths

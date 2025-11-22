@@ -23,12 +23,15 @@ class CreateVectorDB:
         )
 
         return [log_id]
-
+    # TODO add n_results to ini file and enable where query
     def query(self, queryText: list):
-        return self.collections.query(query_texts=queryText)
+        return self.collections.query(
+            query_texts=queryText,
+            n_results=10,
+            # where=where or {}
+        )
 
 
-# TODO Add AsyncChroma in HTTP DB option
 class CreateHttpDB(CreateVectorDB):
 
     def __init__(self, config: configparser.ConfigParser):

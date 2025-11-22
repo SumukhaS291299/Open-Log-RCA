@@ -1,3 +1,3 @@
 from .setUpDB import RCAChroma, RCAChromaPersistent, RCAChromaHttp
 from .ingestDB import Document
-from .embedding import embed_texts
+from .embedding import RCAEmbedding

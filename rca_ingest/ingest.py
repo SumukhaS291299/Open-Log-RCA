@@ -1,45 +1,51 @@
-# Will mostly be removed in next upcoming commits!
+from typing import List
 
-# from fastapi import FastAPI, Request
-# import uvicorn
-#
-# from vectorEmbeddings.ingestDB import Document
-#
-# app = FastAPI()
-# from fastapi.responses import JSONResponse
-# from fastapi.concurrency import run_in_threadpool
-#
-# # UI on statistics
-# @app.get("/")
-# def root():
-#     return {"message": "RCA Ingestion API is running"}
-#
-# @app.get("/health")
-# def health():
-#     return JSONResponse("Healthy",status_code=200)
-#
-# # Ingest logs
-# @app.post("/ingest/log")
-# async def ingest_log(doc: Document):
-#     """Ingest one document into Chroma."""
-#     await run_in_threadpool(Document, doc)
-#     return {"status": "ok", "id": doc.id}
-#
-#
-#
-# @app.post("/query")
-# async def query_logs(query: QueryRequest):
-#
-#     async def _run_query():
-#         return collection.query(
-#             query_texts=[query.text],
-#             n_results=query.n_results
-#         )
-#
-#     result = await run_in_threadpool(_run_query)
-#
-#     return {"results": result}
-#
-# # uvicorn path:app --reload --host 0.0.0.0 --port 8000
-# if __name__ == '__main__':
-#     uvicorn.run("rca_ingest.ingest:app", host="0.0.0.0", port=8000, reload=True)
+from threading import Thread
+from vectorEmbeddings import RCAEmbedding
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, model_validator
+from ingestQueue import ingestQ
+
+app = FastAPI()
+
+
+class IngestRequest(BaseModel):
+    ids: List[str]
+    documents: List[str]
+    metadatas: List[dict]
+
+    @model_validator(mode="after")
+    def validate_lengths(self):
+        if not (
+            len(self.ids) == len(self.documents) == len(self.metadatas)
+        ):
+            raise ValueError(
+                "ids, documents, and metadatas must have the same length"
+            )
+        return self
+
+@app.post("/ingest")
+def ingest(payload: IngestRequest):
+    # If we are here
+    ingestQ.put(payload)
+    print(ingestQ.qsize())
+    return {
+        "status": "success",
+        "count": len(payload.ids)
+    }
+
+def run_ingest_server():
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8080)
+
+def ConsumeAllmessagesFromQueue():
+    while True:
+        message = ingestQ.get()
+        print(message)
+        ingestQ.task_done()
+
+if __name__ == '__main__':
+    consumeMessage = Thread(target=ConsumeAllmessagesFromQueue,daemon=True)
+    consumeMessage.start()
+
+    run_ingest_server()

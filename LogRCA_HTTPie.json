@@ -1,0 +1,80 @@
+{
+  "meta": {
+    "format": "httpie",
+    "version": "1.0.0",
+    "contentType": "collection",
+    "schema": "https://schema.httpie.io/1.0.0.json",
+    "docs": "https://httpie.io/r/help/export-from-httpie",
+    "source": "HTTPie Desktop 2025.2.0"
+  },
+  "entry": {
+    "name": "LogRCA",
+    "icon": {
+      "name": "wrench",
+      "color": "orange"
+    },
+    "auth": {
+      "type": "none"
+    },
+    "requests": [
+      {
+        "name": "QueryData",
+        "url": "http://{{HOSTNAME}}:{{PORT}}/query",
+        "method": "POST",
+        "headers": [],
+        "queryParams": [],
+        "pathParams": [],
+        "auth": {
+          "type": "inherited"
+        },
+        "body": {
+          "type": "text",
+          "file": {
+            "name": ""
+          },
+          "text": {
+            "value": "{\n  \"query_texts\": [\n    \"good\"\n  ]\n}",
+            "format": "application/json"
+          },
+          "form": {
+            "isMultipart": false,
+            "fields": []
+          },
+          "graphql": {
+            "query": "",
+            "variables": ""
+          }
+        }
+      },
+      {
+        "name": "IngestData",
+        "url": "http://{{HOSTNAME}}:{{PORT}}/ingest",
+        "method": "POST",
+        "headers": [],
+        "queryParams": [],
+        "pathParams": [],
+        "auth": {
+          "type": "inherited"
+        },
+        "body": {
+          "type": "text",
+          "file": {
+            "name": ""
+          },
+          "text": {
+            "value": "{\n  \"ids\": [\n    \"1\",\n    \"2\",\n    \"3\"\n  ],\n  \"documents\": [\n    \"sunny\",\n    \"moon\",\n    \"mid-day\"\n  ],\n  \"metadatas\": [\n    {\n      \"demo\": \"test\"\n    },\n    {\n      \"demo\": \"test\"\n    },\n    {\n      \"demo\": \"test\"\n    }\n  ]\n}",
+            "format": "application/json"
+          },
+          "form": {
+            "isMultipart": false,
+            "fields": []
+          },
+          "graphql": {
+            "query": "",
+            "variables": ""
+          }
+        }
+      }
+    ]
+  }
+}

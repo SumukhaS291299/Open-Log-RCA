@@ -19,6 +19,11 @@ class RCAEmbedding:
 model = nomic-embed-text
 host = http://localhost:11434""")
 
+        try:
+            requests.get(f"{self.host}/api/tags",timeout=4)
+        except requests.exceptions.RequestException as e:
+            self.logger.error(e)
+
     def embed_texts(self, texts):
         # 1️⃣ CLEAN TEXTS
         clean_texts = [t.strip() if isinstance(t, str) else "" for t in texts]

@@ -1,2 +1,2 @@
-[26-01-31 22:07:30] [INFO    ] Loaded logs from config file: C:\Users\config.ini (RCAconfig.py:13)
-[26-01-31 22:07:30] [INFO    ] Successfully read config file from path: [] (RCAconfig.py:18)
+[26-02-01 20:57:27] [INFO    ] Loaded logs from config file: C:\Users\shank\PycharmProjects\config.ini (RCAconfig.py:13)
+[26-02-01 20:57:27] [INFO    ] Successfully read config file from path: ['C:\\Users\\shank\\PycharmProjects\\config.ini'] (RCAconfig.py:18)

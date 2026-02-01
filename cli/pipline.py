@@ -29,6 +29,7 @@ def flushToChroma(embeddingQueryClient: RCAEmbedding, chroma_client):
     while True:
         payload = ingestQ.get()  # BLOCKS until data is available
         try:
+            console.print("Data was found in the ingest queue")
             embeddings = embeddingQueryClient.embed_texts(payload.documents)
             console.print("[green]embeddings was flushed[/green]")
             chroma_client.collections.add(
@@ -38,12 +39,13 @@ def flushToChroma(embeddingQueryClient: RCAEmbedding, chroma_client):
                 embeddings=embeddings
             )
 
+            console.print("Current Queue size: "+ str(ingestQ.qsize()))
+
         except Exception as e:
             console.print(e)
 
         finally:
             ingestQ.task_done()
-        # time.sleep(120)
 
 
 # TODO: Make Chunked Batch Add (When needed) [chroma_client.collections.add]
